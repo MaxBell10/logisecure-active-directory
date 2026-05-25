@@ -184,4 +184,8 @@ That said, based on what I have learned building P1:
 
 ---
 
-*This lab is part of the LogiSecure SA Enterprise Security Programme — a 16-project portfolio designed to demonstrate practical cybersecurity skills aligned with both GRC and technical roles.*
+*Part of the [LogiSecure SA Enterprise Security Programme](https://github.com/MaxBell10/logisecure-enterprise-security-program) — a 16-project cybersecurity portfolio.*
+
+---
+
+

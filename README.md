@@ -165,8 +165,8 @@ Wazuh OVA v4.14.5 déployé avec accès SSH depuis l'hôte via port forwarding N
 ```
 logisecure-active-directory/
 ├── README.md
-├── docs/
-│   └── Guide_P1_LogiSecure_AD_v2.docx
+├── p1_logo.svg
+├── lessons_learned.md
 └── screenshots/
     ├── 00_lab-setup/          # Config réseau VirtualBox, IP statiques
     ├── 01_ad-installation/    # Installation AD DS, promotion DC
@@ -195,6 +195,4 @@ logisecure-active-directory/
 | 10 | Règles MITRE ATT&CK Wazuh | ✅ Terminé |
 | 11 | PingCastle After Hardening | ✅ Terminé |
 
----
 
-*Document personnel — usage privé uniquement — ne pas publier*

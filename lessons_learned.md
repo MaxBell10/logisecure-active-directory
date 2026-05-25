@@ -14,7 +14,7 @@ The biggest initial challenge was simply working within Windows Server 2022. Ser
 
 Understanding the relationship between the DC, the domain, and the client machine took time — particularly why certain settings apply at the domain level via GPO rather than locally on each machine, and why the DNS server must point to itself (`127.0.0.1`) before AD DS promotion.
 
-One concrete example: the French Windows Server uses **"Admins du domaine"** instead of **"Domain Admins"** for the group name in PowerShell commands. This caused a first failed attempt when trying to add `it.admin` to the group.
+One concrete example: the French version of Windows Server uses **"Admins du domaine"** instead of **"Domain Admins"** as the group name in PowerShell commands. This caused a first failed attempt when trying to add `it.admin` to the group.
 
 This is exactly the kind of hands-on familiarity that no course can fully replace.
 
@@ -36,9 +36,9 @@ From that point, all configuration was done over SSH with full AZERTY support an
 
 ---
 
-### Wazuh OVA — no netplan, wrong network stack
+### Wazuh OVA — no netplan, unexpected network stack
 
-The OVA uses **Amazon Linux / RHEL-based networking** (`/etc/sysconfig/network-scripts/ifcfg-*`), not Ubuntu's netplan. The first instinct was to look for `/etc/netplan/` and `/etc/network/` — neither existed. This caused a failed reimport of the OVA before understanding the underlying OS.
+The OVA uses **Amazon Linux / RHEL-based networking** (`/etc/sysconfig/network-scripts/ifcfg-*`), not Ubuntu's netplan. The first instinct was to look for `/etc/netplan/` and `/etc/network/` — neither existed. This caused a failed reimport of the OVA before identifying the correct network configuration path.
 
 **Fix applied:** Once the correct path was identified, the static IP was configured via:
 
@@ -56,17 +56,17 @@ EOF
 sudo systemctl restart network
 ```
 
-**Lesson:** Never assume the network stack of a Linux VM without checking first. `ls /etc/netplan/`, `ls /etc/network/`, and `ls /etc/sysconfig/network-scripts/` are the three common paths depending on the distro.
+**Lesson:** Never assume the network stack of a Linux VM without checking first. `/etc/netplan/`, `/etc/network/`, and `/etc/sysconfig/network-scripts/` are the three common paths depending on the distribution.
 
 ---
 
-### Wazuh admin password — no install file on OVA
+### Wazuh admin password — no install file on the OVA
 
-The standard Wazuh documentation says to recover the admin password from `wazuh-install-files.tar`. That file **does not exist** on the pre-built OVA. The password hash in `internal_users.yml` is set at build time and not recoverable through that method.
+The standard Wazuh documentation instructs users to recover the admin password from `wazuh-install-files.tar`. That file **does not exist** on the pre-built OVA. The password hash in `internal_users.yml` is set at build time and is not recoverable through that method.
 
 **Fix applied:** The password was reset manually in three steps:
 
-1. Generate a new bcrypt hash using the bundled Java:
+1. Generate a new bcrypt hash using the bundled Java runtime:
 ```bash
 sudo JAVA_HOME=/usr/share/wazuh-indexer/jdk \
   /usr/share/wazuh-indexer/plugins/opensearch-security/tools/hash.sh \
@@ -100,7 +100,7 @@ The initial assumption was that the Wazuh dashboard (`https://10.10.10.30`) shou
 
 The `lan-network` internal network in VirtualBox is isolated from the host. Only VMs on that network can reach each other. The dashboard is only accessible from **DC01** or **WKS01** inside the lab — which is the correct architecture for a SIEM in a real enterprise (management plane isolated from the host network).
 
-This was initially perceived as a bug; it is actually a feature.
+This was initially perceived as a bug. It is actually a feature.
 
 ---
 
@@ -112,9 +112,9 @@ When running:
 Add-Computer -DomainName "lab.local" -NewName "LOGISECURE-WKS01" -Credential lab\it.admin -Restart
 ```
 
-PowerShell warned that the NetBIOS name would be truncated to `LOGISECURE-WKS0` (15-character limit). The machine joined the domain successfully but the rename failed on first attempt because the Directory Service was busy during the join operation.
+PowerShell warned that the NetBIOS name would be truncated to `LOGISECURE-WKS0` (15-character limit). The machine joined the domain successfully but the rename failed on the first attempt because the Directory Service was busy during the join operation.
 
-**Fix applied:** Rename was done separately after reboot:
+**Fix applied:** The rename was performed separately after reboot:
 
 ```powershell
 Rename-Computer -NewName "LOGISECURE-WKS01" -DomainCredential lab\it.admin -Restart
@@ -126,7 +126,7 @@ Rename-Computer -NewName "LOGISECURE-WKS01" -DomainCredential lab\it.admin -Rest
 
 ### PingCastle score — anomalies block global improvement
 
-After applying all hardening corrections (MachineAccountQuota=0, Recycle Bin, AES256 on all accounts, NTLMv2 enforcement, LDAP signing, it.admin marked as sensitive), the **Domain Risk Level remained at 55/100**.
+After applying all hardening corrections (MachineAccountQuota=0, Recycle Bin, AES256 on all accounts, NTLMv2 enforcement, LDAP signing, it.admin marked as sensitive and non-delegatable), the **Domain Risk Level remained at 55/100**.
 
 The reason: PingCastle takes the **maximum** of the four category scores. The Anomalies category (55/100) was not improved by these corrections — it requires configurations beyond the scope of P1 such as a PKI for LDAP over SSL, elimination of pass-the-credential vectors, and disabling legacy protocols at the OS level.
 
@@ -134,7 +134,7 @@ The reason: PingCastle takes the **maximum** of the four category scores. The An
 - Privileged Accounts: 50 → 40 (-10 pts)
 - Stale Objects: 41 → 36 (-5 pts)
 
-**Lesson:** A security score is not always a linear reflection of effort. Understanding *why* a score does not move — and being able to explain it — is more valuable than chasing the number itself.
+**Lesson:** A security score does not always linearly reflect effort. Understanding *why* a score does not move — and being able to articulate it clearly — is more valuable than chasing the number itself.
 
 ---
 
@@ -153,9 +153,9 @@ Without any custom rule configuration, Wazuh already correlated security events 
 
 The depth of visibility available from a free, open-source SIEM on a home lab was genuinely surprising.
 
-### SSH port forwarding as a workflow pattern
+### SSH port forwarding as a reusable workflow pattern
 
-The decision to use SSH port forwarding instead of the VirtualBox console for Wazuh turned out to be the right call not just for keyboard reasons — it also enables scripting, copy-paste, and proper terminal behavior. This pattern (NAT + port forwarding for management access) is directly reusable for any future Linux VM in the lab.
+The decision to use SSH port forwarding instead of the VirtualBox console for Wazuh turned out to be the right call — not just for keyboard reasons, but also because it enables scripting, copy-paste, and proper terminal behavior. This pattern (NAT + port forwarding for management access) is directly reusable for any future Linux VM in the lab.
 
 ---
 
@@ -163,12 +163,12 @@ The decision to use SSH port forwarding instead of the VirtualBox console for Wa
 
 I am currently in a learning phase — theoretical and lab-based — with the goal of moving into a hands-on GRC + Technical role. I do not yet have production experience, and I think it is important to say that clearly rather than pretend otherwise.
 
-That said, based on what I have learned building P1:
+That said, based on what I learned building P1:
 
-- **Wazuh would sit on a dedicated management VLAN**, fully isolated from monitored endpoints, with firewall rules restricting who can reach the dashboard and the manager port (1514/1515)
+- **Wazuh would sit on a dedicated management VLAN**, fully isolated from monitored endpoints, with firewall rules restricting who can reach the dashboard and the manager ports (1514/1515)
 - **Agent enrollment would use certificate-based authentication** rather than the default shared key, to ensure integrity of agent-manager communication
 - **GPOs would be more granular** — separate policies per OU rather than domain-root linked, allowing targeted enforcement and easier rollback
-- **The Wazuh admin password would never be reset via `sed`** on a production system — a proper secrets management tool (HashiCorp Vault, AWS Secrets Manager) would handle credential rotation
+- **The Wazuh admin password would never be reset via `sed`** on a production system — a proper secrets management solution (HashiCorp Vault, AWS Secrets Manager) would handle credential rotation
 - **PingCastle scans would run on a schedule** (monthly or after any AD change) as part of a continuous compliance posture, not just as point-in-time baseline/after snapshots
 - **LDAP signing and channel binding** would be enforced from day one — in this lab they were added as a hardening step, but in production they should be baseline requirements
 
@@ -185,7 +185,3 @@ That said, based on what I have learned building P1:
 ---
 
 *Part of the [LogiSecure SA Enterprise Security Programme](https://github.com/MaxBell10/logisecure-enterprise-security-program) — a 16-project cybersecurity portfolio.*
-
----
-
-

@@ -2,16 +2,16 @@
 
 <img src="./p1_logo.svg" alt="P1 Logo" width="100%"/>
 
-> **LogiSecure SA** · Enterprise Security Programme  
-> Domaine : `lab.local` · DC01 : `10.10.10.10` · WKS01 : `10.10.10.20` · Wazuh : `10.10.10.30`
+> **LogiSecure SA** · Enterprise Security Programme
+> Domain : `lab.local` · DC01 : `10.10.10.10` · WKS01 : `10.10.10.20` · Wazuh : `10.10.10.30`
 
-## Objectif
+## Objective
 
-Construire l'infrastructure d'identité et de détection d'une entreprise belge de logistique automatisée (**LogiSecure SA**) soumise à NIS2, ISO 27001 et IEC 62443, en simulant un environnement Active Directory complet avec monitoring SIEM via Wazuh.
+Build the identity and detection infrastructure of a fictional Belgian automated logistics company (**LogiSecure SA**) subject to NIS2, ISO 27001, and IEC 62443, by simulating a complete Active Directory environment with SIEM monitoring via Wazuh.
 
 ---
 
-## Architecture du Lab
+## Lab Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -27,36 +27,36 @@ Construire l'infrastructure d'identité et de détection d'une entreprise belge 
 │  └─────────────┘  └─────────────┘  └─────────────┘  │
 └─────────────────────────────────────────────────────┘
         │ Adapter 1 NAT (internet)
-        │ Adapter 2 lan-network (isolé)
+        │ Adapter 2 lan-network (isolated)
 ```
 
-| VM | OS | IP | Rôle |
+| VM | OS | IP | Role |
 |---|---|---|---|
 | LOGISECURE-DC01 | Windows Server 2022 | 10.10.10.10 | Domain Controller, DNS, GPO |
-| LOGISECURE-WKS01 | Windows 10 Pro | 10.10.10.20 | Poste client joint au domaine |
+| LOGISECURE-WKS01 | Windows 10 Pro | 10.10.10.20 | Domain-joined workstation |
 | LOGISECURE-WAZUH | Ubuntu (OVA) | 10.10.10.30 | Wazuh Manager + Dashboard |
 
 ---
 
-## Ce qui a été construit
+## What Was Built
 
-### 1. Active Directory — Domaine `lab.local`
+### 1. Active Directory — Domain `lab.local`
 
-Structure OU complète simulant une entreprise réelle :
+Complete OU structure simulating a real company:
 
 ```
 lab.local
 └── LogiSecure/
-    ├── Users/          (5 utilisateurs métier)
+    ├── Users/          (5 business users)
     ├── Admins/         (it.admin — Domain Admin)
     ├── Workstations/   (LOGISECURE-WKS01)
     ├── Servers/
     └── Service Accounts/
 ```
 
-**Utilisateurs créés :**
+**Users created:**
 
-| Nom | Login | Titre |
+| Name | Login | Title |
 |---|---|---|
 | Sophie Lebrun | s.lebrun | Logistics Operator |
 | Thomas Renard | t.renard | WMS Operator |
@@ -69,32 +69,32 @@ lab.local
 
 ---
 
-### 2. GPO Hardening — 4 stratégies actives
+### 2. GPO Hardening — 4 Active Policies
 
-| GPO | Paramètre clé | Valeur | Référentiel |
+| GPO | Key Setting | Value | Framework |
 |---|---|---|---|
-| Account Lockout Policy | Seuil verrouillage | 5 tentatives | CIS / MITRE T1110 |
-| Account Lockout Policy | Durée verrouillage | 30 minutes | CIS Benchmark |
-| Password Policy | Longueur minimale | 12 caractères | CIS + NIS2 |
-| Password Policy | Complexité | Activée | CIS Benchmark |
-| Audit Policy | Événements de connexion | Réussite + Échec | MITRE T1078, T1110 |
-| Security Hardening | NTLMv2 uniquement | LmCompatibilityLevel=5 | CIS Benchmark |
-| Security Hardening | SMB Signing | Activé | CIS Benchmark |
-| Security Hardening | LLMNR désactivé | Activé | MITRE T1557 |
+| Account Lockout Policy | Lockout threshold | 5 attempts | CIS / MITRE T1110 |
+| Account Lockout Policy | Lockout duration | 30 minutes | CIS Benchmark |
+| Password Policy | Minimum length | 12 characters | CIS + NIS2 |
+| Password Policy | Complexity | Enabled | CIS Benchmark |
+| Audit Policy | Logon events | Success + Failure | MITRE T1078, T1110 |
+| Security Hardening | NTLMv2 only | LmCompatibilityLevel=5 | CIS Benchmark |
+| Security Hardening | SMB Signing | Enabled | CIS Benchmark |
+| Security Hardening | LLMNR disabled | Enabled | MITRE T1557 |
 
 ![GPO Account Lockout](screenshots/03_gpo-hardening/14_DC01_GPO_AccountLockout.png)
 
 ---
 
-### 3. Wazuh SIEM — 2 agents actifs
+### 3. Wazuh SIEM — 2 Active Agents
 
-Wazuh OVA v4.14.5 déployé avec accès SSH depuis l'hôte via port forwarding NAT (2222:22). Dashboard accessible exclusivement depuis le réseau interne `lan-network` — cohérent avec une architecture zero-trust.
+Wazuh OVA v4.14.5 deployed with SSH access from the host via NAT port forwarding (2222:22). Dashboard accessible exclusively from the internal `lan-network` — consistent with a zero-trust architecture.
 
 ![Wazuh Dashboard](screenshots/04_wazuh-setup/25_Wazuh_Dashboard_Home.png)
 
-**Agents déployés :**
+**Deployed agents:**
 
-| Agent | IP | OS | Statut |
+| Agent | IP | OS | Status |
 |---|---|---|---|
 | DC01 | 10.10.10.10 | Windows Server 2022 | ● active |
 | WKS01 | 10.10.10.20 | Windows 10 Pro | ● active |
@@ -103,45 +103,45 @@ Wazuh OVA v4.14.5 déployé avec accès SSH depuis l'hôte via port forwarding N
 
 ---
 
-### 4. Règles MITRE ATT&CK custom
+### 4. Custom MITRE ATT&CK Rules
 
-3 règles LogiSecure créées dans `/var/ossec/etc/rules/logisecure_rules.xml` :
+3 LogiSecure rules created in `/var/ossec/etc/rules/logisecure_rules.xml`:
 
 | Rule ID | Technique | Description | Level |
 |---|---|---|---|
-| 100001 | T1110 — Brute Force | Échec de login Windows (Event 4625) | 10 — High |
-| 100002 | T1078 — Valid Accounts | Login compte privilégié (Event 4672) | 8 — Medium |
-| 100003 | T1087 — Account Discovery | Énumération comptes/groupes (Events 4798, 4799) | 8 — Medium |
+| 100001 | T1110 — Brute Force | Failed Windows login (Event 4625) | 10 — High |
+| 100002 | T1078 — Valid Accounts | Privileged account logon (Event 4672) | 8 — Medium |
+| 100003 | T1087 — Account Discovery | Account/group enumeration (Events 4798, 4799) | 8 — Medium |
 
 ![MITRE Rules](screenshots/05_wazuh-rules/35_Wazuh_MITRE_Rules_LogiSecure.png)
 
 ---
 
-### 5. PingCastle — Évaluation de la sécurité AD
+### 5. PingCastle — AD Security Assessment
 
-**Scan Baseline (2026-05-24) :**
+**Baseline Scan (2026-05-24):**
 
 ![PingCastle Baseline](screenshots/06_pingcastle/20a_DC01_PingCastle_Score.png)
 
-**Scan After Hardening (2026-05-25) :**
+**After Hardening Scan (2026-05-25):**
 
 ![PingCastle After](screenshots/06_pingcastle/38_PingCastle_After_Score.png)
 
-**Résultats comparatifs :**
+**Comparative results:**
 
-| Catégorie | Baseline | After | Delta |
+| Category | Baseline | After | Delta |
 |---|---|---|---|
 | Stale Objects | 41/100 | 36/100 | **-5** ✅ |
 | Privileged Accounts | 50/100 | 40/100 | **-10** ✅ |
-| Trusts | 0/100 | 0/100 | 0 (parfait) |
-| Anomalies | 55/100 | 55/100 | 0 (bloque le global) |
-| **Domain Risk Level** | **55/100** | **55/100** | bloqué par Anomalies |
+| Trusts | 0/100 | 0/100 | 0 (perfect) |
+| Anomalies | 55/100 | 55/100 | 0 (blocks global score) |
+| **Domain Risk Level** | **55/100** | **55/100** | blocked by Anomalies |
 
-> Les anomalies résiduelles (pass-the-credential, network sniffing) nécessitent une PKI interne et des configurations avancées hors scope P1. Les améliorations sur Privileged Accounts (-10) et Stale Objects (-5) reflètent un durcissement réaliste et documenté.
+> Residual anomalies (pass-the-credential, network sniffing) require an internal PKI and advanced configurations beyond P1 scope. Improvements on Privileged Accounts (-10) and Stale Objects (-5) reflect realistic and documented hardening.
 
 ---
 
-## Stack technique
+## Tech Stack
 
 ![Windows Server 2022](https://img.shields.io/badge/Windows_Server_2022-0078D4?style=flat&logo=windows&logoColor=white)
 ![Windows 10](https://img.shields.io/badge/Windows_10_Pro-0078D4?style=flat&logo=windows&logoColor=white)
@@ -149,18 +149,18 @@ Wazuh OVA v4.14.5 déployé avec accès SSH depuis l'hôte via port forwarding N
 ![VirtualBox](https://img.shields.io/badge/VirtualBox_7.x-183A61?style=flat&logo=virtualbox&logoColor=white)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5391FE?style=flat&logo=powershell&logoColor=white)
 
-| Outil | Version | Usage |
+| Tool | Version | Usage |
 |---|---|---|
-| VirtualBox | 7.x | Hyperviseur |
+| VirtualBox | 7.x | Hypervisor |
 | Windows Server 2022 | Standard Evaluation | Domain Controller |
-| Windows 10 Pro | 22H2 | Workstation client |
+| Windows 10 Pro | 22H2 | Client workstation |
 | Wazuh OVA | 4.14.5 | SIEM / XDR |
-| PingCastle | 3.5.1.31 | Audit sécurité AD |
-| PowerShell | 5.1+ | Administration AD & GPO |
+| PingCastle | 3.5.1.31 | AD security audit |
+| PowerShell | 5.1+ | AD & GPO administration |
 
 ---
 
-## Structure du dépôt
+## Repository Structure
 
 ```
 logisecure-active-directory/
@@ -168,31 +168,29 @@ logisecure-active-directory/
 ├── p1_logo.svg
 ├── lessons_learned.md
 └── screenshots/
-    ├── 00_lab-setup/          # Config réseau VirtualBox, IP statiques
-    ├── 01_ad-installation/    # Installation AD DS, promotion DC
-    ├── 02_ou-users/           # Structure OU, utilisateurs, it.admin
-    ├── 03_gpo-hardening/      # 4 GPOs actives
-    ├── 04_wazuh-setup/        # Wazuh OVA, agents DC01 et WKS01
-    ├── 05_wazuh-rules/        # Règles MITRE ATT&CK custom
-    └── 06_pingcastle/         # Scans baseline et after hardening
+    ├── 00_lab-setup/          # VirtualBox network config, static IPs
+    ├── 01_ad-installation/    # AD DS installation, DC promotion
+    ├── 02_ou-users/           # OU structure, users, it.admin
+    ├── 03_gpo-hardening/      # 4 active GPOs
+    ├── 04_wazuh-setup/        # Wazuh OVA, DC01 and WKS01 agents
+    ├── 05_wazuh-rules/        # Custom MITRE ATT&CK rules
+    └── 06_pingcastle/         # Baseline and after hardening scans
 ```
 
 ---
 
-## Statut
+## Status
 
-| # | Étape | Statut |
+| # | Step | Status |
 |---|---|---|
-| 1 | Config IP + Renommage DC01 | ✅ Terminé |
-| 2 | Installation AD DS + Promotion DC | ✅ Terminé |
-| 3 | Structure OU + Utilisateurs | ✅ Terminé |
-| 4 | GPO Hardening (4 GPOs) | ✅ Terminé |
-| 5 | PingCastle Baseline (55/100) | ✅ Terminé |
-| 6 | Wazuh OVA — Config réseau + Dashboard | ✅ Terminé |
-| 7 | Agent Wazuh sur DC01 | ✅ Terminé |
-| 8 | WKS01 — Config IP + Joint au domaine | ✅ Terminé |
-| 9 | Agent Wazuh sur WKS01 | ✅ Terminé |
-| 10 | Règles MITRE ATT&CK Wazuh | ✅ Terminé |
-| 11 | PingCastle After Hardening | ✅ Terminé |
-
-
+| 1 | DC01 IP config + rename | ✅ Done |
+| 2 | AD DS installation + DC promotion | ✅ Done |
+| 3 | OU structure + users | ✅ Done |
+| 4 | GPO hardening (4 GPOs) | ✅ Done |
+| 5 | PingCastle baseline (55/100) | ✅ Done |
+| 6 | Wazuh OVA — network config + dashboard | ✅ Done |
+| 7 | Wazuh agent on DC01 | ✅ Done |
+| 8 | WKS01 — IP config + domain join | ✅ Done |
+| 9 | Wazuh agent on WKS01 | ✅ Done |
+| 10 | MITRE ATT&CK Wazuh rules | ✅ Done |
+| 11 | PingCastle after hardening | ✅ Done |

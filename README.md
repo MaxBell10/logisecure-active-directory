@@ -34,7 +34,7 @@ Build the identity and detection infrastructure of a fictional Belgian automated
 |---|---|---|---|
 | LOGISECURE-DC01 | Windows Server 2022 | 10.10.10.10 | Domain Controller, DNS, GPO |
 | LOGISECURE-WKS01 | Windows 10 Pro | 10.10.10.20 | Domain-joined workstation |
-| LOGISECURE-WAZUH | Ubuntu (OVA) | 10.10.10.30 | Wazuh Manager + Dashboard |
+| LOGISECURE-WAZUH | Amazon Linux 2023 (Wazuh OVA) | 10.10.10.30 | Wazuh Manager + Dashboard |
 
 ---
 
@@ -88,7 +88,7 @@ lab.local
 
 ### 3. Wazuh SIEM — 2 Active Agents
 
-Wazuh OVA v4.14.5 deployed with SSH access from the host via NAT port forwarding (2222:22). Dashboard accessible exclusively from the internal `lan-network` — consistent with a zero-trust architecture.
+Wazuh OVA v4.14.5 deployed with SSH access from the host via NAT port forwarding (2222:22). Dashboard accessible exclusively from the internal `lan-network` — the dashboard itself is never exposed to the host or the Internet.
 
 ![Wazuh Dashboard](screenshots/04_wazuh-setup/25_Wazuh_Dashboard_Home.png)
 
@@ -114,6 +114,12 @@ Wazuh OVA v4.14.5 deployed with SSH access from the host via NAT port forwarding
 | 100003 | T1087 — Account Discovery | Account/group enumeration (Events 4798, 4799) | 8 — Medium |
 
 ![MITRE Rules](screenshots/05_wazuh-rules/35_Wazuh_MITRE_Rules_LogiSecure.png)
+
+> **Correction — 2026-09-23.** Rule `100001` was silently inactive from deployment until this date. Wazuh ships `local_rules.xml` with an example rule using the same ID, and that file is loaded before `logisecure_rules.xml` — so the example was kept and the T1110 rule discarded, with a single startup warning as the only signal. The example was removed, and the fix proven with the same controlled failed logon before and after: built-in rule `60122` (level 5) before, `100001` (level 10, T1110) after. Details in [`lessons_learned.md`](./lessons_learned.md).
+
+![Rule 100001 — before / after](screenshots/05_wazuh-rules/39_rule_100001_before_after.png)
+
+![Rule 100001 firing in the Wazuh dashboard — T1110](screenshots/05_wazuh-rules/40_wazuh_dashboard_rule_100001_t1110.png)
 
 ---
 
@@ -194,3 +200,4 @@ logisecure-active-directory/
 | 9 | Wazuh agent on WKS01 | ✅ Done |
 | 10 | MITRE ATT&CK Wazuh rules | ✅ Done |
 | 11 | PingCastle after hardening | ✅ Done |
+| 12 | Rule 100001 fixed — duplicate ID with Wazuh's shipped example, proven before/after | ✅ Done (2026-09-23) |

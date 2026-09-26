@@ -70,7 +70,7 @@ The standard Wazuh documentation instructs users to recover the admin password f
 ```bash
 sudo JAVA_HOME=/usr/share/wazuh-indexer/jdk \
   /usr/share/wazuh-indexer/plugins/opensearch-security/tools/hash.sh \
-  -p LogiSecure2024!
+  -p <new-admin-password>
 ```
 
 2. Replace the old hash in `internal_users.yml` using `sed`:
@@ -138,6 +138,29 @@ The reason: PingCastle takes the **maximum** of the four category scores. The An
 
 ---
 
+### The flagship detection rule never fired — found four months later
+
+Rule `100001` — T1110 Brute Force, level 10, the most important of the three custom rules — was written, deployed in `logisecure_rules.xml`, and documented with a screenshot of the rule set. It never fired once.
+
+Wazuh ships `local_rules.xml` with an example rule: an SSH demo matching source IP `1.1.1.1`. Its ID is `100001` — the first number of the custom range, and exactly the one chosen here. Rule files in a directory are loaded in alphabetical order, and `local_rules.xml` sorts before `logisecure_rules.xml` (*c* before *g*). When two rules share an ID, Wazuh keeps the first occurrence and discards the other. The example stayed; the T1110 rule was dropped. The only signal was one warning line — `Rule ID '100001' is duplicated. Only the first occurrence will be considered.` — which went unread for four months.
+
+It surfaced during P2, in the output of `wazuh-logtest`, and was confirmed with a controlled test on DC01: a failed network logon with a non-existent account (event 4625, no lockout risk), checked against the alert it produced.
+
+| | Rule that handled the failed logon |
+|---|---|
+| Before the fix | `60122` — level 5, *Logon Failure - Unknown user or bad password* (Wazuh built-in) |
+| After the fix | `100001` — level 10, *LogiSecure - Failed Windows login attempt (T1110 Brute Force)* |
+
+**Fix:** the example rule was deleted from `local_rules.xml`, after a backup kept outside the rules directory — inside it, Wazuh would have loaded the backup as a second rule file and recreated the duplicate. The custom rule keeps its documented ID.
+
+**Lesson:** A detection rule is proven by making it fire, not by showing that the file exists. The screenshot in this README proved the rule was written; the KPI "3 MITRE rules" counted rules written, not rules working. The validation that would have caught it — a controlled test of the T1110 rule — was in this project's own Next Steps, and was never run. Running it four months later is what exposed the problem.
+
+**Still open:** the rule fires on a *single* failed logon. That detects failed logons, not brute force — and Wazuh's built-in rule `60204` already detects the brute-force pattern at level 10 (see Positive Surprises). A single mistyped password now raises a level-10 alert. The rule needs rework: a frequency condition, or a target Wazuh does not already cover — failures against privileged accounts, or one source failing across many accounts (password spray).
+
+**Evidence:** `screenshots/05_wazuh-rules/39_rule_100001_before_after.png`, `screenshots/05_wazuh-rules/40_wazuh_dashboard_rule_100001_t1110.png`
+
+---
+
 ## Positive Surprises
 
 ### Active Directory structure is more approachable than expected
@@ -171,16 +194,17 @@ That said, based on what I learned building P1:
 - **The Wazuh admin password would never be reset via `sed`** on a production system — a proper secrets management solution (HashiCorp Vault, AWS Secrets Manager) would handle credential rotation
 - **PingCastle scans would run on a schedule** (monthly or after any AD change) as part of a continuous compliance posture, not just as point-in-time baseline/after snapshots
 - **LDAP signing and channel binding** would be enforced from day one — in this lab they were added as a hardening step, but in production they should be baseline requirements
+- **Every custom detection rule would ship with a test event** — replayed through `wazuh-logtest` or triggered in a controlled way before the rule counts as coverage — and custom rule IDs would start clear of the range used by Wazuh's shipped examples
 
 ---
 
 ## Next Steps
 
-- Deploy pfSense for network segmentation (P2) — DMZ, VLAN isolation, Suricata IDS/IPS
 - Build a custom Wazuh rule for Event ID 4728 (user added to Domain Admins group)
 - Add a custom rule for Event ID 4720 (user account created) for insider threat detection
 - Configure Wazuh File Integrity Monitoring (FIM) on DC01 for SYSVOL and critical registry keys
-- Run a simulated password spray attack to validate the T1110 detection rule in a controlled scenario
+- Rework rule `100001` into a real brute-force / password-spray detection (frequency-based, or targeting what built-in rule `60204` does not cover), then validate it with a simulated spray
+- Reduce rule `100002` noise — event 4672 is emitted for every privileged logon, system accounts included
 
 ---
 

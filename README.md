@@ -200,4 +200,4 @@ logisecure-active-directory/
 | 9 | Wazuh agent on WKS01 | ✅ Done |
 | 10 | MITRE ATT&CK Wazuh rules | ✅ Done |
 | 11 | PingCastle after hardening | ✅ Done |
-| 12 | Rule 100001 fixed — duplicate ID with Wazuh's shipped example, proven before/after | ✅ Done (2026-09-23) |
+| 12 | Rule 100001 fixed — duplicate ID with Wazuh's shipped example, proven before/after | ✅ Done |

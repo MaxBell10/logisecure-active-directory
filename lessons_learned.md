@@ -157,7 +157,7 @@ It surfaced during P2, in the output of `wazuh-logtest`, and was confirmed with 
 
 **Still open:** the rule fires on a *single* failed logon. That detects failed logons, not brute force — and Wazuh's built-in rule `60204` already detects the brute-force pattern at level 10 (see Positive Surprises). A single mistyped password now raises a level-10 alert. The rule needs rework: a frequency condition, or a target Wazuh does not already cover — failures against privileged accounts, or one source failing across many accounts (password spray).
 
-**Evidence:** `screenshots/05_wazuh-rules/39_rule_100001_before_after.png`, `screenshots/05_wazuh-rules/40_wazuh_dashboard_rule_100001_t1110.png`
+**Evidence:** [`39_rule_100001_before_after.png`](screenshots/05_wazuh-rules/39_rule_100001_before_after.png), [`40_wazuh_dashboard_rule_100001_t1110.png`](screenshots/05_wazuh-rules/40_wazuh_dashboard_rule_100001_t1110.png)
 
 ---
 

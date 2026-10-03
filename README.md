@@ -7,7 +7,7 @@
 
 ## Objective
 
-Build the identity and detection infrastructure of a fictional Belgian automated logistics company (**LogiSecure SA**) subject to NIS2, ISO 27001, and IEC 62443, by simulating a complete Active Directory environment with SIEM monitoring via Wazuh.
+Build the identity and detection infrastructure of a fictional Belgian parcel logistics operator (**LogiSecure SA**) — an NIS2 important entity that uses ISO 27001 and IEC 62443 as reference frameworks — by simulating a complete Active Directory environment with SIEM monitoring via Wazuh.
 
 ---
 
